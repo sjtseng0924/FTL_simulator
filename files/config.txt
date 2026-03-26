@@ -1,0 +1,5 @@
+PsizeByte 18897436672
+LsizeByte 17179869184
+blockSizeByte 2097152
+pageSizeByte 16384
+sectorSizeByte 512

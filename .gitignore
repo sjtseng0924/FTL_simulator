@@ -1,0 +1,19 @@
+# Build output
+ftl.exe
+*.o
+
+# Extracted raw traces
+/raw_tar_extract/
+*.tar
+*.gz
+/*.csv
+
+# Converted traces
+/rawfile*.txt
+/files/rawfile*.txt
+
+# Generated reports
+/statistic_part2.txt
+
+# Misc local files
+/file/
