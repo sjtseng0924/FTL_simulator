@@ -10,10 +10,6 @@ ftl.exe
 
 # Converted traces
 /rawfile*.txt
-/files/rawfile*.txt
 
 # Generated reports
 /statistic_part2.txt
-
-# Misc local files
-/file/
