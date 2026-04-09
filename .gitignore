@@ -13,3 +13,5 @@ ftl.exe
 
 # Generated reports
 /statistic_part2.txt
+
+/remapped_traces/

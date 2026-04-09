@@ -26,6 +26,40 @@ static void addBlockToGCList(FTL *FTLptr, byte4 blockNo) {
     list->cnt++;
 }
 
+static void removeBlockFromGCList(FTL *FTLptr, byte4 blockNo, byte4 validPagesCnt) {
+    Block *block = &(FTLptr->blocks[blockNo]);
+    List *list = &(FTLptr->GCList[validPagesCnt]);
+
+    if (list->cnt == 0) {
+        return;
+    }
+
+    if (block->GCPrev != FTL_NULL) {
+        FTLptr->blocks[block->GCPrev].GCNext = block->GCNext;
+    } else if (list->head == blockNo) {
+        list->head = block->GCNext;
+    } else {
+        return;
+    }
+
+    if (block->GCNext != FTL_NULL) {
+        FTLptr->blocks[block->GCNext].GCPrev = block->GCPrev;
+    } else if (list->tail == blockNo) {
+        list->tail = block->GCPrev;
+    }
+
+    if (list->head == FTL_NULL) {
+        list->tail = FTL_NULL;
+    }
+    if (list->tail == FTL_NULL) {
+        list->head = FTL_NULL;
+    }
+
+    list->cnt--;
+    block->GCNext = FTL_NULL;
+    block->GCPrev = FTL_NULL;
+}
+
 static byte4 popBufferHead(WriteBuf *wbuf, byte8 *logicalPage) {
     byte4 idx = wbuf->head;
     *logicalPage = wbuf->logicalPages[idx];
@@ -126,24 +160,7 @@ void markPageInvalid(FTL *FTLptr, Table *entry) {
     if (isOpenBlock(FTLptr, blockNo)) {
         return;
     }
-    List *oldList = &(FTLptr->GCList[oldValidPagesCnt]);
-    // 把 block 從她原本的 GCList 中移除
-    if (oldList->cnt > 0) {
-        if (block->GCPrev != FTL_NULL) {
-            FTLptr->blocks[block->GCPrev].GCNext = block->GCNext;
-        } else {
-            oldList->head = block->GCNext;
-        }
-
-        if (block->GCNext != FTL_NULL) {
-            FTLptr->blocks[block->GCNext].GCPrev = block->GCPrev;
-        } else {
-            oldList->tail = block->GCPrev;
-        }
-        oldList->cnt--;
-        block->GCNext = FTL_NULL;
-        block->GCPrev = FTL_NULL;
-    }
+    removeBlockFromGCList(FTLptr, blockNo, oldValidPagesCnt);
     addBlockToGCList(FTLptr, blockNo);
 }
 
@@ -154,6 +171,8 @@ void WriteNewPage(FTL *FTLptr, byte4 *newPageNo, byte4 *newBlockNo, byte1 temper
     // 目前的 frontier 還沒有綁定一個 block
     // 就從 FreeList 拿一個 block 來寫
     if (!frontier->valid) {
+        assert(FTLptr->FreeList.cnt > 0);
+        assert(FTLptr->FreeList.head != FTL_NULL);
         frontier->blockNo = FTLptr->FreeList.head;
         Block *newBlock = &(FTLptr->blocks[frontier->blockNo]);
         FTLptr->FreeList.head = newBlock->FreeNext;

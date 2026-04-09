@@ -14,15 +14,26 @@ void print(FTL *FTLptr) {
     printf("%u\n", FTLptr->GCList[0].head);
 }
 
-int main() {
+int main(int argc, char *argv[]) {
     FTL ftl;
 
     FILE *TraceFile, *ConfigFile;
     char *config_file = "./files/config.txt";
     char *trace_file  = "./files/rawfile0_20G.txt";
 
+    if (argc >= 2) {
+        trace_file = argv[1];
+    }
+    if (argc >= 3) {
+        config_file = argv[2];
+    }
+
     printf("Initializing %s ...\n", config_file);
     ConfigFile = fopen(config_file, "r");
+    if (ConfigFile == NULL) {
+        fprintf(stderr, "Failed to open config file: %s\n", config_file);
+        return 1;
+    }
     FTLinit(&ftl, ConfigFile);
 
     // printf("Logical Addree Size: %lld, Phy Addr size: %lld\n", ftl.config.LSize, ftl.config.PSize);
@@ -30,6 +41,11 @@ int main() {
     char operation[100], buffer[100];
     byte8 tag, sectorNum, len, cnt;
     TraceFile = fopen(trace_file, "r");
+    if (TraceFile == NULL) {
+        fprintf(stderr, "Failed to open trace file: %s\n", trace_file);
+        FTLfree(&ftl);
+        return 1;
+    }
     // int cnt = 0;
 
     printf("Fill Logical Block (%lld bytes) ...\n", ftl.config.LSize);
@@ -81,7 +97,7 @@ int main() {
         sscanf(buffer, "%lld %99s %lld %31s", &tag, operation, &sectorNum, temp_len);
         len = (byte8) atof(temp_len);
 
-        // If over the bound, in this simulation, I will ignore that operation.
+        // 超過 logical address space(16G)，這整筆 request 直接 continue
         if(sectorNum + len > ftl.config.LSize / ftl.config.sectorSize || len == 0){
             // printf("X");
             continue;

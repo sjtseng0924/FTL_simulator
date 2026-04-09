@@ -58,7 +58,45 @@ python raw2trace.py
 這三個檔案可視為三組不同的測資，分別對應不同的 LUN
 - 若要實際拿其中一個 trace 給模擬器執行，請把它複製到 `files/rawfile0_20G.txt`
 
-## 3. Config 設定
+## 3. 把 952G Trace 映射到 16G Logical Space
+
+`rawfile952G_simple_LUN3.txt`、`rawfile952G_simple_LUN4.txt`、
+`rawfile952G_simple_LUN6.txt` 其實已經是 simulator 可讀的 trace 格式：
+
+```text
+0 W 1511745290 1
+0 R 1225887468 8
+```
+
+問題在於這些 sector 編號來自很大的 address space，但目前 simulator 的
+logical size 只有 `16 GiB`。在 `main.c` 裡，只要 request 不符合：
+
+```text
+sector + length <= logical_sectors
+```
+
+這筆 request 就會被直接跳過，所以原始 `952G` trace 會有很多資料被丟掉。
+
+如果想在不改 simulator 容量的前提下，讓這些 trace 可以重播，可以執行：
+
+```powershell
+python remap_traces.py
+```
+
+這支腳本會直接讀取三個 `rawfile952G_simple_LUN*.txt`，把每筆 request 的
+sector 用 wrap 的方式折回目前 `config.txt` 設定的 logical space，並輸出：
+
+- `remapped_traces/rawfile952G_simple_LUN3_wrap.txt`
+- `remapped_traces/rawfile952G_simple_LUN4_wrap.txt`
+- `remapped_traces/rawfile952G_simple_LUN6_wrap.txt`
+
+它使用邏輯是：
+
+```text
+wrapped_sector = sector % (logical_sectors - length + 1)
+```
+
+## 4. Config 設定
 
 模擬器會讀取：
 
@@ -108,7 +146,7 @@ sectorSizeByte 512
 
 也就是說，現在是在使用原始大 trace 中的一個較小工作區間來做模擬。
 
-## 4. 編譯
+## 5. 編譯
 
 如果你是在 PowerShell 中直接使用 MSYS2 安裝的 GCC，可以執行：
 
@@ -122,7 +160,7 @@ C:\msys64\ucrt64\bin\gcc.exe -Wall -Wextra -g -o ftl.exe main.c init.c write.c G
 gcc -Wall -Wextra -g -o ftl.exe main.c init.c write.c GC.c
 ```
 
-## 5. 執行
+## 6. 執行
 
 請先確認以下檔案存在：
 

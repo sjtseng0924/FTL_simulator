@@ -3,12 +3,41 @@
 #include <stdio.h>
 #include <assert.h>
 
+static byte1 popVictimFromGCList(FTL *FTLptr, byte4 *victimBlock) {
+    for (byte8 i = 0; i <= FTLptr->config.pagesInBlock; i++) {
+        List *list = &(FTLptr->GCList[i]);
+        if (list->cnt == 0) {
+            continue;
+        }
+
+        *victimBlock = list->head;
+        assert(*victimBlock != FTL_NULL);
+
+        Block *victim = &(FTLptr->blocks[*victimBlock]);
+        list->head = victim->GCNext;
+        if (list->head != FTL_NULL) {
+            FTLptr->blocks[list->head].GCPrev = FTL_NULL;
+        } else {
+            list->tail = FTL_NULL;
+        }
+
+        victim->GCNext = FTL_NULL;
+        victim->GCPrev = FTL_NULL;
+        list->cnt--;
+        return 1;
+    }
+    return 0;
+}
+
 // Greedy
 void GC(FTL *FTLptr) {
     flushBuffer(FTLptr);
     // get victim
-    byte4 victimBlock;
-    getVictim(FTLptr, &victimBlock);
+    byte4 victimBlock = FTL_NULL;
+    if (!popVictimFromGCList(FTLptr, &victimBlock)) {
+        return;
+    }
+    assert(victimBlock != FTL_NULL);
     // move valid data
     Config *C = &(FTLptr->config);
     for(byte4 i = 0; i<C->pagesInBlock; i++) {
@@ -35,21 +64,6 @@ void GC(FTL *FTLptr) {
         FTLptr->FreeList.tail = victimBlock;
     }
     FTLptr->FreeList.cnt++;
-}
-
-
-void getVictim(FTL *FTLptr, byte4 *victimBlock) {
-    for(byte8 i=0;i<=FTLptr->config.pagesInBlock;i++) {
-        if(FTLptr->GCList[i].cnt > 0) {
-            *victimBlock = FTLptr->GCList[i].head;
-            FTLptr->GCList[i].cnt--;
-            // update list
-            if(FTLptr->GCList[i].cnt!=0) {
-                FTLptr->GCList[i].head = FTLptr->blocks[*victimBlock].GCNext;
-            }
-            break;
-        }
-    }
 }
 
 void GCMovePage(FTL *FTLptr, byte4 *oldBlock, byte4 *oldPage) {
