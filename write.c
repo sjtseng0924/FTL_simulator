@@ -165,6 +165,9 @@ void markPageInvalid(FTL *FTLptr, Table *entry) {
 }
 
 void WriteNewPage(FTL *FTLptr, byte4 *newPageNo, byte4 *newBlockNo, byte1 temperature) {
+    if (!FTLptr->config.enableHotCold) {
+        temperature = HOT_DATA;
+    }
     WriteFrontier *frontier = (temperature == COLD_DATA)
         ? &(FTLptr->coldFrontier)
         : &(FTLptr->hotFrontier);

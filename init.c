@@ -46,6 +46,7 @@ void FTLinit(FTL *FTLptr,FILE *fp){
 	C->blocksInP = C->PSize     / C->blockSize;
 	C->pagesInBlock    = C->blockSize / C->pageSize;
 	C->sectorsInPage   = C->pageSize  / C->sectorSize;
+    C->enableHotCold = 1;
 
 	// block page
 	FTLptr->blocks = (Block *) calloc(C->blocksInP, sizeof(Block));

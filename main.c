@@ -20,14 +20,21 @@ int main(int argc, char *argv[]) {
     FILE *TraceFile, *ConfigFile;
     char *config_file = "./files/config.txt";
     char *trace_file  = "./files/rawfile0_20G.txt";
+    byte1 disableHotCold = 0;
+    int positionalArgc = 0;
 
-    if (argc >= 2) {
-        trace_file = argv[1];
+    for (int i = 1; i < argc; i++) {
+        if (strcmp(argv[i], "--no-hot-cold") == 0) {
+            disableHotCold = 1;
+            continue;
+        }
+        if (positionalArgc == 0) {
+            trace_file = argv[i];
+        } else if (positionalArgc == 1) {
+            config_file = argv[i];
+        }
+        positionalArgc++;
     }
-    if (argc >= 3) {
-        config_file = argv[2];
-    }
-
     printf("Initializing %s ...\n", config_file);
     ConfigFile = fopen(config_file, "r");
     if (ConfigFile == NULL) {
@@ -35,6 +42,9 @@ int main(int argc, char *argv[]) {
         return 1;
     }
     FTLinit(&ftl, ConfigFile);
+    if (disableHotCold) {
+        ftl.config.enableHotCold = 0;
+    }
 
     // printf("Logical Addree Size: %lld, Phy Addr size: %lld\n", ftl.config.LSize, ftl.config.PSize);
 

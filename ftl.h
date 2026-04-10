@@ -74,6 +74,7 @@ typedef struct {
 	byte8   sectorsInPage; 
 
 	byte1 	isActualWrite;
+	byte1   enableHotCold;
 } Config;
 
 typedef struct {

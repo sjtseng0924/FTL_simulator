@@ -183,3 +183,9 @@ host    write: ...
 actual  write: ...
 amplification: ...
 ```
+### 執行可以用兩種模式如下
+
+```powershell
+.\ftl.exe
+.\ftl.exe --no-hot-cold
+```
